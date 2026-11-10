@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}我的收藏 - 新能源汽车综合管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-heart me-2"></i>我的收藏</h2>
+    <p>您收藏的心仪车型</p>
+</div>
+
+<div id="favoritesContent">
+    <div class="text-center text-muted py-5"><i class="bi bi-arrow-repeat spin me-2"></i>加载中...</div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+    .fav-card { transition: transform 0.2s; }
+    .fav-card:hover { transform: translateY(-4px); }
+    .fav-img { height: 140px; background: linear-gradient(135deg, #fff0f6, #ffddd2); display: flex; align-items: center; justify-content: center; border-radius: 8px 8px 0 0; }
+    .fav-img i { font-size: 2.5rem; color: #f5222d; opacity: 0.3; }
+    .car-price { color: var(--danger); font-weight: 700; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadFavorites() {
+        const data = await apiRequest('/api/my_favorites');
+        const container = document.getElementById('favoritesContent');
+        if (!data || data.code !== 0) {
+            container.innerHTML = '<div class="alert alert-warning">' + (data ? data.msg : '加载失败，请先登录') + '</div>';
+            return;
+        }
+        const favorites = data.data || [];
+        if (favorites.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-heart me-2"></i>暂无收藏车辆<a href="/car_list" class="ms-2">去选车</a></div>';
+            return;
+        }
+        let html = '<div class="row g-3">';
+        favorites.forEach((car, idx) => {
+            const name = car.model || car.car_name || car.name || '未知车型';
+            const brand = car.brand || '未知品牌';
+            const price = car.price ? parseFloat(car.price).toFixed(2) + ' 万' : '暂无报价';
+            const rangeVal = car.range_cltc || car.range || car.battery_range || '-';
+            const rating = car.avg_score ? parseFloat(car.avg_score).toFixed(1) : '-';
+            const vehicleId = car.vehicle_id || car.id || name;
+            html += '<div class="col-6 col-md-4 col-lg-3"><div class="card fav-card h-100">'
+                + '<div class="fav-img"><i class="bi bi-heart-fill"></i></div>'
+                + '<div class="card-body p-3">'
+                + '<h6 class="card-title mb-1 text-truncate" title="' + brand + ' ' + name + '">' + brand + ' ' + name + '</h6>'
+                + '<div class="car-price mb-1">' + price + '</div>'
+                + '<div class="d-flex justify-content-between align-items-center small text-muted mb-2">'
+                + '<span><i class="bi bi-battery-charging me-1"></i>' + rangeVal + 'km</span>'
+                + '<span class="text-warning">' + rating + ' <i class="bi bi-star-fill"></i></span>'
+                + '</div>'
+                + '<div class="d-flex gap-1">'
+                + '<a href="/car_detail/' + encodeURIComponent(vehicleId) + '" class="btn btn-outline-primary btn-sm flex-fill">详情</a>'
+                + '<button class="btn btn-outline-danger btn-sm" onclick="removeFavorite(\'' + vehicleId + '\')" title="取消收藏"><i class="bi bi-trash"></i></button>'
+                + '</div></div></div></div>';
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    async function removeFavorite(vehicleId) {
+        if (!confirm('确定取消收藏？')) return;
+        const data = await apiRequest('/api/favorite/' + vehicleId, { method: 'DELETE' });
+        if (data && data.code === 0) {
+            showToast('已取消收藏', 'info');
+            loadFavorites();
+        } else {
+            showToast(data ? data.msg : '操作失败', 'danger');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadFavorites);
+</script>
+{% endblock %}

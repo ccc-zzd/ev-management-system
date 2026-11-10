@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}我的订单 - 新能源汽车综合管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-bag me-2"></i>我的订单</h2>
+    <p>查看您所有购车订单</p>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead><tr><th>订单号</th><th>车型</th><th>金额(万元)</th><th>支付方式</th><th>状态</th><th>下单时间</th><th>操作</th></tr></thead>
+                <tbody id="ordersBody">
+                    <tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-arrow-repeat spin me-2"></i>加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+    .badge-status { font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const statusMap = {
+        '待支付': 'warning',
+        '已支付': 'primary',
+        '已交付': 'success',
+        '已取消': 'secondary'
+    };
+
+    async function loadOrders() {
+        const data = await apiRequest('/api/my_orders');
+        const tbody = document.getElementById('ordersBody');
+        if (!data || data.code === 401) return;
+        if (!data || data.code !== 0 || !data.data || data.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">暂无订单，<a href="/car_list">去选车</a></td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.data.map(o => {
+            const carName = [o.brand, o.series, o.model].filter(Boolean).join(' ') || '未知车型';
+            const badge = '<span class="badge-status bg-' + (statusMap[o.order_status] || 'secondary') + '">' + (o.order_status || '') + '</span>';
+            const price = o.total_price != null ? parseFloat(o.total_price).toFixed(2) : '-';
+            let actions = '';
+            if (o.order_status === '待支付') {
+                actions = '<button class="btn btn-success btn-sm me-1" onclick="payOrder(\'' + o.order_id + '\')">支付</button>'
+                    + '<button class="btn btn-outline-danger btn-sm" onclick="cancelOrder(\'' + o.order_id + '\')">取消</button>';
+            }
+            return '<tr>'
+                + '<td><small>' + (o.order_id || '') + '</small></td>'
+                + '<td>' + carName + '</td>'
+                + '<td class="text-danger fw-bold">' + price + '</td>'
+                + '<td>' + (o.pay_method || '全款') + '</td>'
+                + '<td>' + badge + '</td>'
+                + '<td><small>' + (o.created_at || '') + '</small></td>'
+                + '<td>' + actions + '</td>'
+                + '</tr>';
+        }).join('');
+    }
+
+    async function payOrder(orderId) {
+        if (!confirm('确定支付该订单吗？')) return;
+        const data = await apiRequest('/api/order/' + orderId + '/pay', { method: 'PUT' });
+        if (data && data.code === 0) {
+            showToast('支付成功！', 'success');
+            loadOrders();
+        } else {
+            showToast(data ? data.msg : '支付失败', 'danger');
+        }
+    }
+
+    async function cancelOrder(orderId) {
+        if (!confirm('确定取消该订单吗？')) return;
+        const data = await apiRequest('/api/order/' + orderId + '/cancel', { method: 'PUT' });
+        if (data && data.code === 0) {
+            showToast('订单已取消', 'info');
+            loadOrders();
+        } else {
+            showToast(data ? data.msg : '操作失败', 'danger');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadOrders);
+</script>
+{% endblock %}

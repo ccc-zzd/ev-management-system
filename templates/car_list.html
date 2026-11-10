@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+{% block title %}车辆列表 - 新能源汽车综合管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-car-front me-2"></i>选车购车</h2>
+    <p>筛选车型后可直接预约试驾、收藏或进入详情下单</p>
+</div>
+
+<!-- 搜索筛选区 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form id="filterForm" onsubmit="loadVehicles(event)">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">品牌</label>
+                    <select class="form-select" id="filterBrand">
+                        <option value="">全部品牌</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">最低价(万)</label>
+                    <input type="number" class="form-control" id="filterMinPrice" placeholder="不限" step="0.1">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">最高价(万)</label>
+                    <input type="number" class="form-control" id="filterMaxPrice" placeholder="不限" step="0.1">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">最低续航(km)</label>
+                    <input type="number" class="form-control" id="filterRange" placeholder="不限">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">关键词搜索</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="filterKeyword" placeholder="品牌/车型/关键词">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-3 mt-1">
+                <div class="col-auto">
+                    <label class="form-label small fw-bold mb-0">车辆类型：</label>
+                </div>
+                <div class="col-auto">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="filterType" id="typeAll" value="" checked>
+                        <label class="form-check-label" for="typeAll">全部</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="filterType" id="typeBEV" value="纯电">
+                        <label class="form-check-label" for="typeBEV">纯电</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="filterType" id="typePHEV" value="插电">
+                        <label class="form-check-label" for="typePHEV">插电</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="filterType" id="typeEREV" value="增程">
+                        <label class="form-check-label" for="typeEREV">增程</label>
+                    </div>
+                </div>
+                <div class="col-auto ms-auto">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFilter()"><i class="bi bi-arrow-counterclockwise me-1"></i>重置</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 结果统计 -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <span class="text-muted" id="resultCount">加载中...</span>
+    <div class="d-flex align-items-center gap-2">
+        <label class="small text-muted mb-0">排序</label>
+        <select class="form-select form-select-sm" id="filterSort" style="width:auto" onchange="fetchVehicles()">
+            <option value="">价格从高到低</option>
+            <option value="price_asc">价格从低到高</option>
+            <option value="range_desc">续航从高到低</option>
+            <option value="rating_desc">评分从高到低</option>
+        </select>
+    </div>
+</div>
+
+<!-- 车辆列表 -->
+<div id="vehicleList" class="row g-3">
+    <div class="text-center text-muted py-5 col-12"><i class="bi bi-arrow-repeat spin me-2"></i>加载中...</div>
+</div>
+
+<!-- 分页 -->
+<nav class="mt-4" id="pagination"></nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+    .car-card { cursor: pointer; transition: transform 0.2s; overflow: hidden; }
+    .car-card:hover { transform: translateY(-4px); }
+    .car-img-placeholder { height: 140px; background: linear-gradient(135deg, #e6f7ff, #bae7ff); display: flex; align-items: center; justify-content: center; border-radius: 8px 8px 0 0; cursor: pointer; }
+    .car-img-placeholder i { font-size: 2.5rem; color: var(--primary); opacity: 0.4; }
+    .car-img { width: 100%; height: 140px; object-fit: cover; border-radius: 8px 8px 0 0; cursor: pointer; display: block; background: linear-gradient(135deg, #f5f8fc, #e8f0f8); }
+    .car-price { color: var(--danger); font-weight: 700; }
+    .car-type-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentPage = 1;
+    const pageSize = 12;
+
+    // 初始化URL参数
+    function initFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('keyword')) document.getElementById('filterKeyword').value = params.get('keyword');
+        if (params.get('brand')) document.getElementById('filterBrand').value = params.get('brand');
+    }
+
+    // 加载品牌列表
+    async function loadBrands() {
+        const data = await apiRequest('/api/brands');
+        if (data && data.code === 0 && data.data) {
+            const select = document.getElementById('filterBrand');
+            const brands = Array.isArray(data.data) ? data.data : (data.data.brands || []);
+            brands.forEach(b => {
+                const name = typeof b === 'string' ? b : (b.brand || b.name || b);
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                select.appendChild(opt);
+            });
+        }
+        initFromURL();
+    }
+
+    // 加载车辆列表
+    async function loadVehicles(e) {
+        if (e) e.preventDefault();
+        currentPage = 1;
+        fetchVehicles();
+    }
+
+    async function fetchVehicles() {
+        const container = document.getElementById('vehicleList');
+        container.innerHTML = '<div class="text-center text-muted py-5 col-12"><i class="bi bi-arrow-repeat spin me-2"></i>加载中...</div>';
+
+        const brand = document.getElementById('filterBrand').value;
+        const minPrice = document.getElementById('filterMinPrice').value;
+        const maxPrice = document.getElementById('filterMaxPrice').value;
+        const range = document.getElementById('filterRange').value;
+        const keyword = document.getElementById('filterKeyword').value.trim();
+        const typeEl = document.querySelector('input[name="filterType"]:checked');
+        const vehicleType = typeEl ? typeEl.value : '';
+        const sort = document.getElementById('filterSort').value;
+
+        let url = '/api/vehicles?page=' + currentPage + '&page_size=' + pageSize;
+        if (brand) url += '&brand=' + encodeURIComponent(brand);
+        if (minPrice) url += '&min_price=' + parseFloat(minPrice);
+        if (maxPrice) url += '&max_price=' + parseFloat(maxPrice);
+        if (range) url += '&min_range=' + range;
+        if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+        if (vehicleType) url += '&type=' + encodeURIComponent(vehicleType);
+        if (sort) url += '&sort=' + encodeURIComponent(sort);
+
+        const data = await apiRequest(url);
+        if (data && data.code === 0) {
+            const vehicles = data.data || [];
+            const total = data.total || data.count || vehicles.length;
+            const countEl = document.getElementById('resultCount');
+            countEl.textContent = '共找到 ' + total + ' 辆车';
+            countEl.dataset.total = total;
+            
+            if (vehicles.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted py-5 col-12"><i class="bi bi-inbox me-2"></i>没有找到符合条件的车辆</div>';
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            vehicles.forEach(car => {
+                const name = car.model || car.car_name || car.name || '未知车型';
+                const brandText = car.brand || '未知品牌';
+                const price = car.price ? parseFloat(car.price).toFixed(2) + ' 万' : '暂无报价';
+                const rangeVal = car.range_cltc || car.range || car.battery_range || '-';
+                const rating = car.rating ? parseFloat(car.rating).toFixed(1) : '-';
+                const typeText = car.type || car.vehicle_type || '';
+                const vid = car.vehicle_id || car.id || '';
+                const detailUrl = '/car_detail/' + encodeURIComponent(vid);
+                const encodedImg = car.image_url ? encodeURI(car.image_url) : '';
+                const lazyAttr = currentPage === 1 ? ' fetchpriority="high"' : ' loading="lazy"';
+
+                let typeBadgeClass = 'bg-info';
+                if (typeText.includes('纯电')) typeBadgeClass = 'bg-success';
+                else if (typeText.includes('插电')) typeBadgeClass = 'bg-primary';
+                else if (typeText.includes('增程')) typeBadgeClass = 'bg-warning text-dark';
+
+                let imgHtml;
+                if (encodedImg) {
+                    imgHtml = '<img src="' + encodedImg + '" class="car-img"' + lazyAttr
+                        + ' onclick="goDetail(\'' + vid + '\')"'
+                        + ' onerror="imgError(this,\'' + vid + '\')">';
+                } else {
+                    imgHtml = '<div class="car-img-placeholder" onclick="goDetail(\'' + vid + '\')">'
+                        + '<i class="bi bi-ev-front"></i></div>';
+                }
+
+                html += '<div class="col-6 col-md-4 col-lg-3">'
+                    + '<div class="card car-card h-100">'
+                    + imgHtml
+                    + '<div class="card-body p-3">'
+                    + '<div class="d-flex justify-content-between align-items-start mb-1">'
+                    + '<h6 class="card-title mb-0 text-truncate flex-grow-1" title="' + brandText + ' ' + name + '">' + brandText + ' ' + name + '</h6>'
+                    + (typeText ? '<span class="badge ' + typeBadgeClass + ' car-type-badge ms-1">' + typeText + '</span>' : '')
+                    + '</div>'
+                    + '<div class="car-price mb-1">' + price + '</div>'
+                    + '<div class="d-flex justify-content-between align-items-center small text-muted mb-2">'
+                    + '<span><i class="bi bi-battery-charging me-1"></i>' + rangeVal + 'km</span>'
+                    + '<span class="text-warning">' + rating + ' <i class="bi bi-star-fill"></i></span>'
+                    + '</div>'
+                    + '<div class="d-flex gap-1">'
+                    + '<a href="' + detailUrl + '" class="btn btn-primary btn-sm flex-fill">详情/下单</a>'
+                    + '<a href="/test_drive?vehicle_id=' + encodeURIComponent(vid) + '" class="btn btn-outline-success btn-sm" title="预约试驾"><i class="bi bi-calendar-check"></i></a>'
+                    + '<button class="btn btn-outline-danger btn-sm" onclick="toggleFavorite(\'' + vid + '\', this)" title="收藏"><i class="bi bi-heart"></i></button>'
+                    + '</div></div></div></div>';
+            });
+            container.innerHTML = html;
+            renderPagination(total);
+        } else {
+            container.innerHTML = '<div class="text-center text-muted py-5 col-12"><i class="bi bi-exclamation-triangle me-2"></i>加载失败</div>';
+        }
+    }
+
+    // 分页渲染（滑动窗口 + 首末页 + 省略号）
+    function renderPagination(total) {
+        const totalPages = Math.ceil(total / pageSize);
+        const nav = document.getElementById('pagination');
+        if (totalPages <= 1) { nav.innerHTML = ''; return; }
+
+        let html = '<ul class="pagination justify-content-center flex-wrap">';
+        // 上一页
+        html += '<li class="page-item ' + (currentPage <= 1 ? 'disabled' : '') + '">'
+            + '<a class="page-link" href="#" onclick="return goPage(' + (currentPage - 1) + ')">上一页</a></li>';
+
+        // 计算滑动窗口范围
+        const win = 2; // 当前页左右各显示2个
+        let start = Math.max(1, currentPage - win);
+        let end = Math.min(totalPages, currentPage + win);
+
+        // 首页 + 省略号
+        if (start > 1) {
+            html += '<li class="page-item ' + (currentPage === 1 ? 'active' : '') + '"><a class="page-link" href="#" onclick="return goPage(1)">1</a></li>';
+            if (start > 2) html += '<li class="page-item disabled"><span class="page-link">…</span></li>';
+        }
+        // 窗口内页码
+        for (let i = start; i <= end; i++) {
+            html += '<li class="page-item ' + (i === currentPage ? 'active' : '') + '"><a class="page-link" href="#" onclick="return goPage(' + i + ')">' + i + '</a></li>';
+        }
+        // 末页 + 省略号
+        if (end < totalPages) {
+            if (end < totalPages - 1) html += '<li class="page-item disabled"><span class="page-link">…</span></li>';
+            html += '<li class="page-item ' + (currentPage === totalPages ? 'active' : '') + '"><a class="page-link" href="#" onclick="return goPage(' + totalPages + ')">' + totalPages + '</a></li>';
+        }
+
+        // 下一页
+        html += '<li class="page-item ' + (currentPage >= totalPages ? 'disabled' : '') + '">'
+            + '<a class="page-link" href="#" onclick="return goPage(' + (currentPage + 1) + ')">下一页</a></li>';
+        html += '</ul>';
+
+        // 页码跳转
+        html += '<div class="d-flex justify-content-center align-items-center gap-2 mt-2 small text-muted">'
+            + '<span>第 ' + currentPage + ' / ' + totalPages + ' 页</span>'
+            + '<span class="ms-2">跳至</span>'
+            + '<input type="number" min="1" max="' + totalPages + '" value="' + currentPage + '" id="jumpInput" class="form-control form-control-sm" style="width:70px" onkeydown="if(event.key===\'Enter\')jumpPage()">'
+            + '<span>页</span>'
+            + '<button class="btn btn-sm btn-outline-primary" onclick="jumpPage()">跳转</button>'
+            + '</div>';
+
+        nav.innerHTML = html;
+    }
+
+    function jumpPage() {
+        const el = document.getElementById('jumpInput');
+        if (!el) return;
+        let p = parseInt(el.value, 10);
+        const totalPages = Math.ceil((parseInt(document.getElementById('resultCount').dataset.total || '0', 10)) / pageSize);
+        if (!p || p < 1) p = 1;
+        if (totalPages && p > totalPages) p = totalPages;
+        goPage(p);
+    }
+
+    function goPage(p) {
+        const el = document.getElementById('resultCount');
+        const totalPages = Math.ceil(parseInt(el.dataset.total || '0', 10) / pageSize) || 1;
+        if (p < 1) p = 1;
+        if (p > totalPages) p = totalPages;
+        if (p === currentPage) return false;
+        currentPage = p;
+        fetchVehicles();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return false;
+    }
+
+    // 重置筛选
+    function resetFilter() {
+        document.getElementById('filterBrand').value = '';
+        document.getElementById('filterMinPrice').value = '';
+        document.getElementById('filterMaxPrice').value = '';
+        document.getElementById('filterRange').value = '';
+        document.getElementById('filterKeyword').value = '';
+        document.getElementById('typeAll').checked = true;
+        document.getElementById('filterSort').value = '';
+        fetchVehicles();
+    }
+
+    // 收藏
+    async function toggleFavorite(vehicleId, btn) {
+        if (!requireLogin('请先登录后收藏')) return;
+        const data = await apiRequest('/api/favorite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vehicle_id: vehicleId })
+        });
+        if (data && data.code === 0) {
+            const icon = btn.querySelector('i');
+            if (icon.classList.contains('bi-heart')) {
+                icon.classList.remove('bi-heart');
+                icon.classList.add('bi-heart-fill');
+                showToast('已收藏', 'success');
+            } else {
+                icon.classList.remove('bi-heart-fill');
+                icon.classList.add('bi-heart');
+                showToast('已取消收藏', 'info');
+            }
+        }
+    }
+
+    // 图片加载失败时，动态去网上搜一张
+    async function dynamicImg(img, brand, series, vid) {
+        try {
+            const r = await fetch('/api/car_image?model=' + encodeURIComponent(series) + '&brand=' + encodeURIComponent(brand));
+            const d = await r.json();
+            if (d.code === 0 && d.data && d.data.url) {
+                img.src = d.data.url;
+                img.onerror = null;
+                return;
+            }
+        } catch(e) {}
+        img.outerHTML = '<div class="car-img-placeholder" onclick="location.href=\'/car_detail/' + vid + '\'"><i class="bi bi-ev-front"></i></div>';
+    }
+
+    // 跳转车辆详情
+    function goDetail(vid) {
+        location.href = '/car_detail/' + encodeURIComponent(vid);
+    }
+
+    // 图片加载失败时替换为占位图
+    function imgError(img, vid) {
+        var div = document.createElement('div');
+        div.className = 'car-img-placeholder';
+        div.onclick = function() { goDetail(vid); };
+        div.innerHTML = '<i class="bi bi-ev-front"></i>';
+        img.replaceWith(div);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadBrands();
+        fetchVehicles();
+    });
+</script>
+{% endblock %}

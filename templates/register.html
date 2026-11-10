@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}注册 - 新能源汽车综合管理系统{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow-sm mt-4">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-plus-fill text-primary" style="font-size: 2.5rem;"></i>
+                    <h4 class="fw-bold mt-2">用户注册</h4>
+                    <p class="text-muted small">创建新账号，开启您的智能出行体验</p>
+                </div>
+                <div id="registerAlert"></div>
+                <form id="registerForm" onsubmit="doRegister(event)">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-person me-1"></i>用户名 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="username" placeholder="请输入用户名（用于登录）" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-lock me-1"></i>密码 <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="password" placeholder="请输入密码" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-lock-fill me-1"></i>确认密码 <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="password2" placeholder="请再次输入密码" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-phone me-1"></i>手机号 <span class="text-muted small">(可选)</span></label>
+                        <input type="tel" class="form-control" id="phone" placeholder="请输入手机号">
+                    </div>
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary btn-lg" id="registerBtn">
+                            <i class="bi bi-person-plus me-1"></i>注 册
+                        </button>
+                    </div>
+                    <div class="text-center">
+                        <span class="text-muted">已有账号？</span>
+                        <a href="/login">去登录</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function doRegister(e) {
+        e.preventDefault();
+        const btn = document.getElementById('registerBtn');
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const password2 = document.getElementById('password2').value;
+        const phone = document.getElementById('phone').value.trim();
+        if (!username || !password) {
+            document.getElementById('registerAlert').innerHTML = '<div class="alert alert-warning alert-dismissible"><i class="bi bi-exclamation-triangle me-1"></i>请填写用户名和密码<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+            return;
+        }
+        if (password !== password2) {
+            document.getElementById('registerAlert').innerHTML = '<div class="alert alert-warning alert-dismissible"><i class="bi bi-exclamation-triangle me-1"></i>两次密码输入不一致<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+            return;
+        }
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat spin me-1"></i>注册中...';
+        try {
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, phone: phone || undefined })
+            });
+            const data = await res.json();
+            if (data.code === 0) {
+                showToast('注册成功！正在跳转登录页...', 'success');
+                setTimeout(() => { window.location.href = '/login'; }, 800);
+            } else {
+                document.getElementById('registerAlert').innerHTML = '<div class="alert alert-danger alert-dismissible"><i class="bi bi-x-circle me-1"></i>' + (data.msg || '注册失败') + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-person-plus me-1"></i>注 册';
+            }
+        } catch (err) {
+            document.getElementById('registerAlert').innerHTML = '<div class="alert alert-danger alert-dismissible"><i class="bi bi-x-circle me-1"></i>网络错误，请重试<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-person-plus me-1"></i>注 册';
+        }
+    }
+</script>
+{% endblock %}

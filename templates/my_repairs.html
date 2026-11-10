@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}我的报修 - 新能源汽车综合管理系统{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h2><i class="bi bi-wrench me-2"></i>我的报修记录</h2>
+        <p>查看您提交的所有保修记录</p>
+    </div>
+    <a href="/repair" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>新建报修</a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead><tr><th>车辆</th><th>故障类型</th><th>故障描述</th><th>状态</th><th>提交时间</th><th>处理结果</th></tr></thead>
+                <tbody id="repairsBody">
+                    <tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-arrow-repeat spin me-2"></i>加载中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+    .badge-status { font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const statusMap = {
+        '待处理': 'warning',
+        '处理中': 'primary',
+        '已完成': 'success',
+        '已取消': 'secondary'
+    };
+
+    async function loadRepairs() {
+        const data = await apiRequest('/api/my_repairs');
+        const tbody = document.getElementById('repairsBody');
+        if (!data || data.code === 401) return;
+        if (!data || data.code !== 0 || !data.data || data.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">暂无报修记录<a href="/repair" class="ms-2">去报修</a></td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.data.map(r => {
+            const carName = [r.brand, r.series, r.model].filter(Boolean).join(' ') || '未知车型';
+            const badge = '<span class="badge-status bg-' + (statusMap[r.status] || 'secondary') + '">' + (r.status || '') + '</span>';
+            const desc = (r.problem_desc || '').length > 30 ? (r.problem_desc || '').substring(0, 30) + '...' : (r.problem_desc || '-');
+            return '<tr>'
+                + '<td>' + carName + '</td>'
+                + '<td>' + (r.repair_type || '-') + '</td>'
+                + '<td><small title="' + (r.problem_desc || '') + '">' + desc + '</small></td>'
+                + '<td>' + badge + '</td>'
+                + '<td><small>' + (r.created_at || '') + '</small></td>'
+                + '<td><small>' + (r.result || '-') + '</small></td>'
+                + '</tr>';
+        }).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', loadRepairs);
+</script>
+{% endblock %}

@@ -1,0 +1,567 @@
+{% extends "base.html" %}
+{% block title %}管理后台 - 新能源汽车综合管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-gear me-2"></i>管理后台</h2>
+    <p>系统管理面板</p>
+</div>
+
+<!-- 权限检查 -->
+<div id="adminContent" style="display:none;">
+    <!-- Tab 导航 -->
+    <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tabDashboard"><i class="bi bi-speedometer2 me-1"></i>仪表盘</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabVehicles"><i class="bi bi-car-front me-1"></i>车辆管理</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabDrives"><i class="bi bi-calendar-check me-1"></i>预约管理</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabOrders"><i class="bi bi-bag me-1"></i>订单管理</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabRepairs"><i class="bi bi-wrench me-1"></i>维修管理</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabReviews"><i class="bi bi-star me-1"></i>评价管理</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabImport"><i class="bi bi-upload me-1"></i>数据导入</a></li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Tab1: 仪表盘 -->
+        <div class="tab-pane fade show active" id="tabDashboard">
+            <div class="row g-3 mb-4" id="dashStats"></div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="card p-4 text-center" style="cursor:pointer;" onclick="switchTab('vehicles')">
+                        <i class="bi bi-car-front text-primary" style="font-size:2rem;"></i>
+                        <h6 class="mt-2">车辆管理</h6>
+                        <small class="text-muted">增删改查车辆信息</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-4 text-center" style="cursor:pointer;" onclick="switchTab('drives')">
+                        <i class="bi bi-calendar-check text-success" style="font-size:2rem;"></i>
+                        <h6 class="mt-2">预约管理</h6>
+                        <small class="text-muted">处理试驾预约</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-4 text-center" style="cursor:pointer;" onclick="switchTab('orders')">
+                        <i class="bi bi-bag text-warning" style="font-size:2rem;"></i>
+                        <h6 class="mt-2">订单管理</h6>
+                        <small class="text-muted">查看处理订单</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-4 text-center" style="cursor:pointer;" onclick="switchTab('repairs')">
+                        <i class="bi bi-wrench text-danger" style="font-size:2rem;"></i>
+                        <h6 class="mt-2">报修管理</h6>
+                        <small class="text-muted">处理售后维修</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-4 text-center" style="cursor:pointer;" onclick="switchTab('import')">
+                        <i class="bi bi-upload text-info" style="font-size:2rem;"></i>
+                        <h6 class="mt-2">数据导入</h6>
+                        <small class="text-muted">批量导入车辆数据</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <a href="/stats" class="text-decoration-none">
+                        <div class="card p-4 text-center" style="cursor:pointer;">
+                            <i class="bi bi-bar-chart text-secondary" style="font-size:2rem;"></i>
+                            <h6 class="mt-2">经营看板</h6>
+                            <small class="text-muted">数据可视化分析</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab2: 车辆管理 -->
+        <div class="tab-pane fade" id="tabVehicles">
+            <div class="d-flex justify-content-between mb-3">
+                <h5 class="mb-0">车辆列表</h5>
+                <button class="btn btn-primary btn-sm" onclick="showAddCarModal()"><i class="bi bi-plus me-1"></i>添加车辆</button>
+            </div>
+            <div id="adminVehiclesList">
+                <div class="text-center text-muted py-4"><i class="bi bi-arrow-repeat spin me-2"></i>加载中...</div>
+            </div>
+        </div>
+
+        <!-- Tab3: 预约管理 -->
+        <div class="tab-pane fade" id="tabDrives">
+            <h5 class="mb-3">所有试驾预约</h5>
+            <div id="adminDrivesList">
+                <div class="text-center text-muted py-4">点击加载数据</div>
+            </div>
+        </div>
+
+        <!-- Tab4: 订单管理 -->
+        <div class="tab-pane fade" id="tabOrders">
+            <h5 class="mb-3">所有订单</h5>
+            <div id="adminOrdersList">
+                <div class="text-center text-muted py-4">点击加载数据</div>
+            </div>
+        </div>
+
+        <!-- Tab5: 维修管理 -->
+        <div class="tab-pane fade" id="tabRepairs">
+            <h5 class="mb-3">所有报修记录</h5>
+            <div id="adminRepairsList">
+                <div class="text-center text-muted py-4">点击加载数据</div>
+            </div>
+        </div>
+
+        <!-- Tab6: 评价管理 -->
+        <div class="tab-pane fade" id="tabReviews">
+            <h5 class="mb-3">用户评价管理</h5>
+            <div class="row g-2 mb-3">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="reviewKw" placeholder="搜索用户 / 品牌 / 车型">
+                        <button class="btn btn-primary" onclick="loadAdminReviews()">搜索</button>
+                    </div>
+                </div>
+            </div>
+            <div id="adminReviewsList">
+                <div class="text-center text-muted py-4">点击加载数据</div>
+            </div>
+        </div>
+
+        <!-- Tab7: 数据导入 -->
+        <div class="tab-pane fade" id="tabImport">
+            <div class="card">
+                <div class="card-body p-4">
+                    <h5 class="mb-3"><i class="bi bi-upload me-2"></i>数据导入</h5>
+                    <p class="text-muted">支持导入 CSV 或 JSON 格式的车辆数据文件</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">选择文件</label>
+                        <input type="file" class="form-control" id="importFile" accept=".csv,.json,.xlsx">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">或直接粘贴数据（JSON格式）</label>
+                        <textarea class="form-control" id="importText" rows="8" placeholder='[{"brand": "比亚迪", "car_name": "汉EV", "price": 219800, ...}]'></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="doImport()"><i class="bi bi-cloud-upload me-1"></i>开始导入</button>
+                    <div id="importResult" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 无权限提示 -->
+<div id="noPermission" style="display:none;">
+    <div class="text-center py-5">
+        <i class="bi bi-shield-lock text-danger" style="font-size:4rem;"></i>
+        <h4 class="mt-3">无管理员权限</h4>
+        <p class="text-muted">此页面仅供管理员访问</p>
+        <a href="/" class="btn btn-primary">返回首页</a>
+    </div>
+</div>
+
+<!-- 添加/编辑车辆 Modal -->
+<div class="modal fade" id="carModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="carModalTitle">添加车辆</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="carForm">
+                    <input type="hidden" id="carEditId">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">品牌 *</label>
+                            <input type="text" class="form-control" id="carBrand" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">车型名称 *</label>
+                            <input type="text" class="form-control" id="carModel" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">价格(万元) *</label>
+                            <input type="number" class="form-control" id="carPrice" step="0.01" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">续航里程(km)</label>
+                            <input type="number" class="form-control" id="carRange">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">车辆类型</label>
+                            <select class="form-select" id="carType">
+                                <option value="纯电">纯电动</option>
+                                <option value="插电">插电混动</option>
+                                <option value="增程">增程式</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">百公里加速(s)</label>
+                            <input type="number" class="form-control" id="carAccel" step="0.1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">电池容量(kWh)</label>
+                            <input type="number" class="form-control" id="carBattery" step="0.1">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">描述/备注</label>
+                            <textarea class="form-control" id="carDesc" rows="2"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveCar()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+    .stat-card { text-align: center; padding: 20px; }
+    .stat-card .num { font-size: 2rem; font-weight: 700; color: var(--primary); }
+    .stat-card .label { color: var(--text-secondary); font-size: 0.85rem; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function checkAdmin() {
+        const data = await apiRequest('/api/me');
+        if (data && data.code === 0 && data.data && data.data.role === 'admin') {
+            document.getElementById('adminContent').style.display = 'block';
+            loadDashboard();
+            loadAdminVehicles();
+        } else {
+            document.getElementById('noPermission').style.display = 'block';
+        }
+    }
+
+    // 仪表盘
+    async function loadDashboard() {
+        const data = await apiRequest('/api/stats/overview');
+        if (data && data.code === 0) {
+            const s = data.data;
+            const items = [
+                [s.total_vehicles || s.vehicle_count || 0, '车辆总数', 'bi-car-front', 'primary'],
+                [s.total_users || s.user_count || 0, '用户总数', 'bi-people', 'success'],
+                [s.total_drives || s.drive_count || s.test_drive_count || 0, '预约总数', 'bi-calendar-check', 'info'],
+                [s.total_orders || s.order_count || 0, '订单总数', 'bi-bag', 'warning'],
+                [s.total_repairs || s.repair_count || 0, '报修总数', 'bi-wrench', 'danger']
+            ];
+            let html = '';
+            items.forEach(item => {
+                html += '<div class="col-6 col-md"><div class="card stat-card"><div class="num">' + item[0] + '</div><div class="label"><i class="bi ' + item[2] + ' text-' + item[3] + ' me-1"></i>' + item[3] === 'primary' ? '车辆' : item[1] + '</div></div></div>';
+            });
+            // Simpler approach
+            html = '<div class="col-6 col-md"><div class="card stat-card"><div class="num">' + (s.total_vehicles || s.vehicle_count || 0) + '</div><div class="label"><i class="bi bi-car-front text-primary me-1"></i>车辆总数</div></div></div>';
+            html += '<div class="col-6 col-md"><div class="card stat-card"><div class="num">' + (s.total_users || s.user_count || 0) + '</div><div class="label"><i class="bi bi-people text-success me-1"></i>用户总数</div></div></div>';
+            html += '<div class="col-6 col-md"><div class="card stat-card"><div class="num">' + (s.total_drives || s.drive_count || s.test_drive_count || 0) + '</div><div class="label"><i class="bi bi-calendar-check text-info me-1"></i>预约总数</div></div></div>';
+            html += '<div class="col-6 col-md"><div class="card stat-card"><div class="num">' + (s.total_orders || s.order_count || 0) + '</div><div class="label"><i class="bi bi-bag text-warning me-1"></i>订单总数</div></div></div>';
+            html += '<div class="col-6 col-md"><div class="card stat-card"><div class="num">' + (s.total_repairs || s.repair_count || 0) + '</div><div class="label"><i class="bi bi-wrench text-danger me-1"></i>报修总数</div></div></div>';
+            document.getElementById('dashStats').innerHTML = html;
+        }
+    }
+
+    // 车辆管理
+    async function loadAdminVehicles() {
+        const data = await apiRequest('/api/vehicles?page_size=100');
+        const container = document.getElementById('adminVehiclesList');
+        if (!data || data.code !== 0) {
+            container.innerHTML = '<div class="alert alert-warning">加载失败</div>';
+            return;
+        }
+        const vehicles = data.data || [];
+        if (vehicles.length === 0) {
+            container.innerHTML = '<div class="text-muted text-center py-4">暂无车辆数据</div>';
+            return;
+        }
+        let html = '<div class="table-responsive"><table class="table table-hover table-sm align-middle"><thead><tr>'
+            + '<th>ID</th><th>品牌</th><th>车型</th><th>价格</th><th>续航</th><th>类型</th><th>操作</th></tr></thead><tbody>';
+        vehicles.forEach(v => {
+            const name = v.car_name || v.name || v.model || '-';
+            const brand = v.brand || '-';
+            const price = v.price != null && v.price !== '' ? (parseFloat(v.price)||0).toFixed(2) + '万' : '-';
+            const range = v.range || v.battery_range || '-';
+            const type = v.type || v.vehicle_type || '-';
+            const vid = v.id || v.vehicle_id || '';
+            html += '<tr><td>' + vid + '</td><td>' + brand + '</td><td>' + name + '</td><td>' + price + '</td><td>' + range + 'km</td><td>' + type + '</td>'
+                + '<td><button class="btn btn-outline-primary btn-sm me-1" onclick="editCar(' + JSON.stringify(v).replace(/"/g, '&quot;') + ')"><i class="bi bi-pencil"></i></button>'
+                + '<button class="btn btn-outline-danger btn-sm" onclick="deleteCar(' + vid + ')"><i class="bi bi-trash"></i></button></td></tr>';
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+
+    function showAddCarModal() {
+        document.getElementById('carModalTitle').textContent = '添加车辆';
+        document.getElementById('carEditId').value = '';
+        document.getElementById('carForm').reset();
+        new bootstrap.Modal(document.getElementById('carModal')).show();
+    }
+
+    function editCar(car) {
+        document.getElementById('carModalTitle').textContent = '编辑车辆';
+        document.getElementById('carEditId').value = car.id || car.vehicle_id || '';
+        document.getElementById('carBrand').value = car.brand || '';
+        document.getElementById('carModel').value = car.car_name || car.name || car.model || '';
+        document.getElementById('carPrice').value = car.price || '';
+        document.getElementById('carRange').value = car.range || car.battery_range || '';
+        document.getElementById('carType').value = car.type || car.vehicle_type || '纯电';
+        document.getElementById('carAccel').value = car.acceleration || car.acceleration_0_100 || '';
+        document.getElementById('carBattery').value = car.battery || car.battery_capacity || '';
+        document.getElementById('carDesc').value = car.description || car.desc || '';
+        new bootstrap.Modal(document.getElementById('carModal')).show();
+    }
+
+    async function saveCar() {
+        const id = document.getElementById('carEditId').value;
+        const payload = {
+            brand: document.getElementById('carBrand').value.trim(),
+            car_name: document.getElementById('carModel').value.trim(),
+            price: parseFloat(document.getElementById('carPrice').value) || 0,
+            range: parseInt(document.getElementById('carRange').value) || 0,
+            type: document.getElementById('carType').value,
+            acceleration: document.getElementById('carAccel').value,
+            battery: document.getElementById('carBattery').value,
+            description: document.getElementById('carDesc').value.trim()
+        };
+        if (!payload.brand || !payload.car_name) {
+            showToast('请填写品牌和车型', 'warning');
+            return;
+        }
+        let url = '/api/vehicles';
+        let method = 'POST';
+        if (id) {
+            url = '/api/vehicles/' + id;
+            method = 'PUT';
+            payload.id = parseInt(id);
+        }
+        const data = await apiRequest(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (data && data.code === 0) {
+            bootstrap.Modal.getInstance(document.getElementById('carModal')).hide();
+            showToast(id ? '更新成功' : '添加成功', 'success');
+            loadAdminVehicles();
+        } else {
+            showToast(data ? data.msg : '操作失败', 'danger');
+        }
+    }
+
+    async function deleteCar(id) {
+        if (!confirm('确定删除此车辆？')) return;
+        const data = await apiRequest('/api/vehicles/' + id, { method: 'DELETE' });
+        if (data && data.code === 0) {
+            showToast('已删除', 'info');
+            loadAdminVehicles();
+        } else {
+            showToast(data ? data.msg : '删除失败', 'danger');
+        }
+    }
+
+    // 预约管理
+    async function loadAdminDrives() {
+        const container = document.getElementById('adminDrivesList');
+        container.innerHTML = '<div class="text-center py-3"><i class="bi bi-arrow-repeat spin me-2"></i>加载中...</div>';
+        const data = await apiRequest('/api/admin/drives');
+        if (!data || data.code !== 0) {
+            // 尝试另一个接口
+            const data2 = await apiRequest('/api/test_drives');
+            if (!data2 || data2.code !== 0) {
+                container.innerHTML = '<div class="alert alert-warning">加载失败或接口不可用</div>';
+                return;
+            }
+            renderDrivesTable(data2.data || [], container);
+            return;
+        }
+        renderDrivesTable(data.data || [], container);
+    }
+
+    function renderDrivesTable(drives, container) {
+        if (drives.length === 0) { container.innerHTML = '<div class="text-muted text-center py-4">暂无数据</div>'; return; }
+        let html = '<div class="table-responsive"><table class="table table-hover table-sm"><thead><tr><th>用户</th><th>车辆</th><th>日期</th><th>时间</th><th>电话</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+        drives.forEach(d => {
+            html += '<tr><td>' + (d.username || d.user || '-') + '</td><td>' + (d.car_name || d.car || '-') + '</td><td>' + (d.drive_date || d.date || '-') + '</td><td>' + (d.drive_time || d.time || '-') + '</td><td>' + (d.phone || '-') + '</td><td>' + (d.status || '待确认') + '</td>'
+                + '<td>' + (d.status === '待确认' ? '<button class="btn btn-success btn-sm" onclick="confirmDrive(' + d.id + ')">确认</button>' : '-') + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+
+    async function confirmDrive(id) {
+        const data = await apiRequest('/api/test_drive/' + id + '/confirm', { method: 'PUT' });
+        if (data && data.code === 0) { showToast('已确认', 'success'); loadAdminDrives(); }
+    }
+
+    // 订单管理
+    async function loadAdminOrders() {
+        const container = document.getElementById('adminOrdersList');
+        container.innerHTML = '<div class="text-center py-3"><i class="bi bi-arrow-repeat spin me-2"></i>加载中...</div>';
+        const data = await apiRequest('/api/admin/orders');
+        if (!data || data.code !== 0) {
+            const data2 = await apiRequest('/api/orders');
+            if (!data2 || data2.code !== 0) { container.innerHTML = '<div class="alert alert-warning">加载失败</div>'; return; }
+            renderOrdersTable(data2.data || [], container);
+            return;
+        }
+        renderOrdersTable(data.data || [], container);
+    }
+
+    function renderOrdersTable(orders, container) {
+        if (orders.length === 0) { container.innerHTML = '<div class="text-muted text-center py-4">暂无数据</div>'; return; }
+        let html = '<div class="table-responsive"><table class="table table-hover table-sm"><thead><tr><th>订单号</th><th>用户</th><th>车辆</th><th>价格</th><th>支付</th><th>状态</th></tr></thead><tbody>';
+        orders.forEach(o => {
+            const price = o.price ? (parseFloat(o.price)/10000).toFixed(2) + '万' : '-';
+            html += '<tr><td>' + (o.order_no || o.id || '-') + '</td><td>' + (o.username || o.user || '-') + '</td><td>' + (o.car_name || o.car || '-') + '</td><td>' + price + '</td><td>' + (o.payment_method || '-') + '</td><td>' + (o.status || '-') + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+
+    // 维修管理
+    async function loadAdminRepairs() {
+        const container = document.getElementById('adminRepairsList');
+        container.innerHTML = '<div class="text-center py-3"><i class="bi bi-arrow-repeat spin me-2"></i>加载中...</div>';
+        const data = await apiRequest('/api/admin/repairs');
+        if (!data || data.code !== 0) {
+            const data2 = await apiRequest('/api/repairs');
+            if (!data2 || data2.code !== 0) { container.innerHTML = '<div class="alert alert-warning">加载失败</div>'; return; }
+            renderRepairsTable(data2.data || [], container);
+            return;
+        }
+        renderRepairsTable(data.data || [], container);
+    }
+
+    function renderRepairsTable(repairs, container) {
+        if (repairs.length === 0) { container.innerHTML = '<div class="text-muted text-center py-4">暂无数据</div>'; return; }
+        let html = '<div class="table-responsive"><table class="table table-hover table-sm"><thead><tr><th>用户</th><th>车辆</th><th>故障类型</th><th>描述</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+        repairs.forEach(r => {
+            html += '<tr><td>' + (r.username || r.user || '-') + '</td><td>' + (r.car_name || r.car || '-') + '</td><td>' + (r.fault_type || '-') + '</td><td>' + (r.description || '').substring(0, 30) + '</td><td>' + (r.status || '-') + '</td>'
+                + '<td>' + (r.status !== '已处理' ? '<button class="btn btn-primary btn-sm" onclick="resolveRepair(' + r.id + ')">标记处理</button>' : '-') + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+
+    async function resolveRepair(id) {
+        const data = await apiRequest('/api/repair/' + id + '/resolve', { method: 'PUT' });
+        if (data && data.code === 0) { showToast('已标记处理', 'success'); loadAdminRepairs(); }
+    }
+
+    // 评价管理
+    async function loadAdminReviews() {
+        const container = document.getElementById('adminReviewsList');
+        container.innerHTML = '<div class="text-center py-3"><i class="bi bi-arrow-repeat spin me-2"></i>加载中...</div>';
+        const kw = document.getElementById('reviewKw').value.trim();
+        const url = '/api/admin/reviews' + (kw ? '?kw=' + encodeURIComponent(kw) : '');
+        const data = await apiRequest(url);
+        if (!data || data.code !== 0) {
+            container.innerHTML = '<div class="alert alert-warning">加载失败</div>';
+            return;
+        }
+        renderReviewsTable(data.data || [], container);
+    }
+
+    function renderReviewsTable(reviews, container) {
+        if (reviews.length === 0) { container.innerHTML = '<div class="text-muted text-center py-4">暂无用户评价</div>'; return; }
+        let html = '<div class="table-responsive"><table class="table table-hover table-sm"><thead><tr>' +
+            '<th>用户</th><th>品牌/车型</th><th>综合</th><th>空间</th><th>驾驶</th><th>续航</th><th>外观</th><th>内饰</th><th>性价比</th><th>智能</th><th>评论</th><th>时间</th><th>操作</th>' +
+            '</tr></thead><tbody>';
+        reviews.forEach(r => {
+            html += '<tr>' +
+                '<td>' + (r.username || '-') + '</td>' +
+                '<td>' + (r.brand || '') + ' ' + (r.model || '-') + '</td>' +
+                '<td><b>' + (r.total_score != null ? r.total_score : '-') + '</b></td>' +
+                '<td>' + (r.space_score != null ? r.space_score : '-') + '</td>' +
+                '<td>' + (r.drive_score != null ? r.drive_score : '-') + '</td>' +
+                '<td>' + (r.range_score != null ? r.range_score : '-') + '</td>' +
+                '<td>' + (r.appearance_score != null ? r.appearance_score : '-') + '</td>' +
+                '<td>' + (r.interior_score != null ? r.interior_score : '-') + '</td>' +
+                '<td>' + (r.value_score != null ? r.value_score : '-') + '</td>' +
+                '<td>' + (r.smart_score != null ? r.smart_score : '-') + '</td>' +
+                '<td style="max-width:180px;">' + (r.content ? '<span class="text-truncate d-inline-block" style="max-width:180px;" title="' + (r.content || '').replace(/"/g, '&quot;') + '">' + (r.content || '').substring(0, 30) + '</span>' : '-') + '</td>' +
+                '<td>' + (r.comment_date ? String(r.comment_date).substring(0, 10) : '-') + '</td>' +
+                '<td><button class="btn btn-danger btn-sm" onclick="deleteReview(\'' + r.comment_id + '\')"><i class="bi bi-trash me-1"></i>删除</button></td>' +
+                '</tr>';
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+
+    async function deleteReview(commentId) {
+        if (!confirm('确定删除这条评价吗？车辆的综合评分会同步变化。')) return;
+        const data = await apiRequest('/api/admin/reviews/' + commentId, { method: 'DELETE' });
+        if (data && data.code === 0) { showToast('已删除', 'success'); loadAdminReviews(); }
+    }
+
+    // 数据导入
+    async function doImport() {
+        const fileInput = document.getElementById('importFile');
+        const textInput = document.getElementById('importText').value.trim();
+        const resultDiv = document.getElementById('importResult');
+
+        if (fileInput.files.length > 0) {
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            try {
+                const res = await fetch('/api/import', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.code === 0) {
+                    resultDiv.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle me-1"></i>导入成功！' + (data.data ? '共导入 ' + (data.data.count || data.data.imported || '') + ' 条数据' : '') + '</div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="alert alert-danger">' + (data.msg || '导入失败') + '</div>';
+                }
+            } catch (e) {
+                resultDiv.innerHTML = '<div class="alert alert-danger">网络错误</div>';
+            }
+        } else if (textInput) {
+            try {
+                const jsonData = JSON.parse(textInput);
+                const data = await apiRequest('/api/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: jsonData })
+                });
+                if (data && data.code === 0) {
+                    resultDiv.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle me-1"></i>导入成功！</div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="alert alert-danger">' + (data ? data.msg : '导入失败') + '</div>';
+                }
+            } catch (e) {
+                resultDiv.innerHTML = '<div class="alert alert-danger">JSON格式错误: ' + e.message + '</div>';
+            }
+        } else {
+            resultDiv.innerHTML = '<div class="alert alert-warning">请选择文件或粘贴数据</div>';
+        }
+    }
+
+    // Tab 切换时加载数据
+    document.getElementById('adminTabs').addEventListener('shown.bs.tab', function(e) {
+        const target = e.target.getAttribute('href');
+        if (target === '#tabDrives') loadAdminDrives();
+        else if (target === '#tabOrders') loadAdminOrders();
+        else if (target === '#tabRepairs') loadAdminRepairs();
+        else if (target === '#tabReviews') loadAdminReviews();
+        else if (target === '#tabVehicles') loadAdminVehicles();
+    });
+
+    // 通过 URL ?t= 激活对应管理面板（管理员导航 /admin?t=xx 直连）
+    function switchTab(key) {
+        const map = { dashboard: 'tabDashboard', vehicles: 'tabVehicles', drives: 'tabDrives', orders: 'tabOrders', repairs: 'tabRepairs', reviews: 'tabReviews', import: 'tabImport' };
+        const id = map[key];
+        if (!id) return;
+        const el = document.querySelector('#adminTabs a[data-bs-toggle="tab"][href="#' + id + '"]');
+        if (el) new bootstrap.Tab(el).show();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        checkAdmin();
+        const t = new URLSearchParams(location.search).get('t') || 'dashboard';
+        if (t !== 'dashboard') switchTab(t);
+    });
+</script>
+{% endblock %}

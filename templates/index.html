@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block title %}首页 - 新能源汽车综合管理系统{% endblock %}
+{% block content %}
+<!-- Banner -->
+<div class="rounded-3 p-5 mb-4 text-white" style="background: linear-gradient(135deg, #1890ff 0%, #096dd9 50%, #0050b3 100%);">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <div class="mb-2" style="opacity:.9;font-size:.9rem;">业务功能实现 · 可实际操作的管理系统</div>
+            <h1 class="display-6 fw-bold mb-3"><i class="bi bi-ev-front-fill me-2"></i>新能源汽车综合管理系统</h1>
+            <p class="lead mb-3" style="font-size:1.1rem;">
+                覆盖 <strong>选车、试驾、购车、售后</strong> 全流程。用户办理业务，管理员在后台处理单据。
+            </p>
+            <p class="mb-4" style="opacity:0.88;">
+                从车辆库筛选心仪车型，在线预约试驾、生成购车订单、提交售后报修；登录后可在「我的业务」查看进度，管理员可确认预约、交付订单、受理报修。
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/car_list" class="btn btn-light fw-bold"><i class="bi bi-search me-1"></i>去选车</a>
+                <a href="/test_drive" class="btn btn-warning fw-bold"><i class="bi bi-calendar-check me-1"></i>预约试驾</a>
+                <a href="/repair" class="btn btn-outline-light"><i class="bi bi-wrench me-1"></i>提交报修</a>
+            </div>
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <i class="bi bi-clipboard-check" style="font-size: 7rem; opacity: 0.25;"></i>
+        </div>
+    </div>
+</div>
+
+<!-- 业务流程 -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 gap-md-3 small fw-bold">
+            <span class="badge bg-primary-subtle text-primary px-3 py-2">1. 选车对比</span>
+            <i class="bi bi-chevron-right text-muted"></i>
+            <span class="badge bg-success-subtle text-success px-3 py-2">2. 预约试驾</span>
+            <i class="bi bi-chevron-right text-muted"></i>
+            <span class="badge bg-warning-subtle text-dark px-3 py-2">3. 在线下单</span>
+            <i class="bi bi-chevron-right text-muted"></i>
+            <span class="badge bg-info-subtle text-info px-3 py-2">4. 售后报修</span>
+            <i class="bi bi-chevron-right text-muted"></i>
+            <span class="badge bg-secondary-subtle text-secondary px-3 py-2">5. 后台处理</span>
+        </div>
+    </div>
+</div>
+
+<!-- 功能入口 -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="/car_list" class="text-reset">
+            <div class="card h-100 border-0 shadow-sm text-center p-3 func-card">
+                <i class="bi bi-car-front text-primary" style="font-size:2rem;"></i>
+                <h6 class="mt-2 mb-1">选车购车</h6>
+                <p class="text-muted small mb-0">筛选车型、查看详情、下单</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="/test_drive" class="text-reset">
+            <div class="card h-100 border-0 shadow-sm text-center p-3 func-card">
+                <i class="bi bi-calendar-check text-success" style="font-size:2rem;"></i>
+                <h6 class="mt-2 mb-1">试驾预约</h6>
+                <p class="text-muted small mb-0">提交预约，等待门店确认</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="/repair" class="text-reset">
+            <div class="card h-100 border-0 shadow-sm text-center p-3 func-card">
+                <i class="bi bi-wrench text-warning" style="font-size:2rem;"></i>
+                <h6 class="mt-2 mb-1">售后报修</h6>
+                <p class="text-muted small mb-0">提交故障工单并跟踪进度</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="/my_orders" class="text-reset" onclick="return gateLogin(event, '/my_orders')">
+            <div class="card h-100 border-0 shadow-sm text-center p-3 func-card">
+                <i class="bi bi-bag-check text-danger" style="font-size:2rem;"></i>
+                <h6 class="mt-2 mb-1">我的订单</h6>
+                <p class="text-muted small mb-0">支付、取消、查看交付状态</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="/favorites" class="text-reset" onclick="return gateLogin(event, '/favorites')">
+            <div class="card h-100 border-0 shadow-sm text-center p-3 func-card">
+                <i class="bi bi-heart text-danger" style="font-size:2rem;"></i>
+                <h6 class="mt-2 mb-1">我的收藏</h6>
+                <p class="text-muted small mb-0">收藏对比心仪车型</p>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <a href="/admin" class="text-reset" id="adminEntryLink">
+            <div class="card h-100 border-0 shadow-sm text-center p-3 func-card">
+                <i class="bi bi-gear text-secondary" style="font-size:2rem;"></i>
+                <h6 class="mt-2 mb-1">管理后台</h6>
+                <p class="text-muted small mb-0">处理预约、订单、报修</p>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- 登录后的业务待办 -->
+<div class="card mb-4 shadow-sm" id="workbenchCard" style="display:none;">
+    <div class="card-body">
+        <h5 class="fw-bold mb-3"><i class="bi bi-clipboard-data me-2 text-primary"></i>我的待办</h5>
+        <div class="row g-3" id="workbenchStats"></div>
+        <div class="table-responsive mt-3" id="workbenchList"></div>
+    </div>
+</div>
+
+<!-- 业务量概览 -->
+<div class="row g-3 mb-4" id="statsRow">
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number" id="statVehicles">-</div>
+            <div class="stat-label"><i class="bi bi-car-front me-1"></i>在库车型</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number" id="statDrives">-</div>
+            <div class="stat-label"><i class="bi bi-calendar-check me-1"></i>试驾预约</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number" id="statOrders">-</div>
+            <div class="stat-label"><i class="bi bi-bag me-1"></i>购车订单</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number" id="statRepairs">-</div>
+            <div class="stat-label"><i class="bi bi-wrench me-1"></i>售后工单</div>
+        </div>
+    </div>
+</div>
+
+<!-- 辅助选车：自然语言 -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <h5 class="fw-bold mb-2"><i class="bi bi-search me-2 text-primary"></i>快速选车（辅助功能）</h5>
+        <p class="text-muted small mb-3">说一句预算和需求，系统按条件筛出可预约、可下单的车型。</p>
+        <div class="input-group">
+            <input type="text" class="form-control" id="nlInput" placeholder="例如：20万预算续航500km比亚迪性价比">
+            <button class="btn btn-primary" type="button" onclick="nlRecommend()">
+                <i class="bi bi-search me-1"></i>匹配车型
+            </button>
+        </div>
+        <div id="nlResultCard" class="mt-3" style="display:none;">
+            <div id="nlAnalysis" class="small text-muted mb-2"></div>
+            <div id="nlResult" class="row g-3"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 可办理业务的推荐车辆 -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold mb-0"><i class="bi bi-star-fill text-warning me-2"></i>可办理业务的车型</h4>
+    <a href="/car_list" class="btn btn-outline-primary btn-sm">进入车辆库 <i class="bi bi-arrow-right ms-1"></i></a>
+</div>
+<div class="row g-3 mb-4" id="recommendList">
+    <div class="text-center text-muted py-5"><i class="bi bi-arrow-repeat spin me-2"></i>加载中...</div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+    .func-card { cursor: pointer; }
+    .func-card:hover { transform: translateY(-3px); }
+    .car-card { cursor: pointer; transition: transform 0.2s; }
+    .car-card:hover { transform: translateY(-4px); }
+    .car-card .card-img-top { height: 160px; object-fit: cover; background: linear-gradient(135deg, #e6f7ff, #bae7ff); display: flex; align-items: center; justify-content: center; }
+    .car-card .card-img-top i { font-size: 3rem; color: var(--primary); opacity: 0.5; }
+    .car-price { color: var(--danger); font-weight: 700; font-size: 1.1rem; }
+    .car-rating { color: var(--warning); }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function gateLogin(e, url) {
+        if (currentUser) return true;
+        e.preventDefault();
+        showToast('请先登录后再办理业务', 'warning');
+        setTimeout(() => { window.location.href = '/login?next=' + encodeURIComponent(url); }, 800);
+        return false;
+    }
+
+    function carCardHtml(car, extraBtn) {
+        const name = car.model || car.car_name || car.name || '未知车型';
+        const vid = car.vehicle_id || car.id || '';
+        const brand = car.brand || '未知品牌';
+        const price = car.price ? parseFloat(car.price).toFixed(2) + ' 万' : '暂无报价';
+        const range = car.range_cltc || car.range || car.battery_range || '-';
+        const rating = car.avg_score ? parseFloat(car.avg_score).toFixed(1) : '';
+        const detail = '/car_detail/' + encodeURIComponent(vid);
+        const encodedImg = car.image_url ? encodeURI(car.image_url) : '';
+        const imgHtml = encodedImg
+            ? '<img src="' + encodedImg + '" class="card-img-top" loading="lazy" onclick="location.href=\'' + detail + '\'">'
+            : '<div class="card-img-top" onclick="location.href=\'' + detail + '\'"><i class="bi bi-ev-front"></i></div>';
+        const btns = extraBtn ? extraBtn(vid, name) : (
+            '<div class="d-flex gap-1 mt-2">'
+            + '<a class="btn btn-sm btn-outline-primary flex-fill" href="/test_drive?vehicle_id=' + encodeURIComponent(vid) + '">预约试驾</a>'
+            + '<a class="btn btn-sm btn-primary flex-fill" href="' + detail + '">去办理</a>'
+            + '</div>'
+        );
+        return '<div class="col-6 col-md-4 col-lg-3"><div class="card car-card h-100">'
+            + imgHtml
+            + '<div class="card-body p-3">'
+            + '<h6 class="card-title mb-1 text-truncate" title="' + brand + ' ' + name + '">' + brand + ' ' + name + '</h6>'
+            + '<div class="car-price mb-1">' + price + (rating ? ' <span class="badge bg-warning text-dark">' + rating + '分</span>' : '') + '</div>'
+            + '<div class="small text-muted"><i class="bi bi-battery-charging me-1"></i>' + range + 'km</div>'
+            + btns
+            + '</div></div></div>';
+    }
+
+    async function loadStats() {
+        const data = await apiRequest('/api/stats/overview');
+        if (data && data.code === 0) {
+            const s = data.data;
+            document.getElementById('statVehicles').textContent = s.vehicle_count || 0;
+            document.getElementById('statDrives').textContent = s.drive_count || 0;
+            document.getElementById('statOrders').textContent = s.order_count || 0;
+            document.getElementById('statRepairs').textContent = s.repair_count || 0;
+        }
+    }
+
+    async function loadRecommend() {
+        const data = await apiRequest('/api/recommend');
+        const container = document.getElementById('recommendList');
+        if (data && data.code === 0 && data.data && data.data.length > 0) {
+            container.innerHTML = data.data.slice(0, 8).map(car => carCardHtml(car)).join('');
+        } else {
+            container.innerHTML = '<div class="text-center text-muted py-5 col-12"><i class="bi bi-inbox me-2"></i>暂无在售车型，请先导入车辆数据</div>';
+        }
+    }
+
+    async function nlRecommend() {
+        const text = document.getElementById('nlInput').value.trim();
+        if (!text) return;
+        const resultDiv = document.getElementById('nlResult');
+        const analysisDiv = document.getElementById('nlAnalysis');
+        const card = document.getElementById('nlResultCard');
+        card.style.display = '';
+        resultDiv.innerHTML = '<div class="col-12 text-center text-muted py-3"><i class="bi bi-arrow-repeat spin me-2"></i>正在按条件匹配可办理车型...</div>';
+        const data = await apiRequest('/api/nl_recommend?text=' + encodeURIComponent(text));
+        if (data && data.code === 0 && data.data && data.data.length > 0) {
+            analysisDiv.innerHTML = '<i class="bi bi-info-circle me-1"></i>匹配条件：' + (data.analysis || '综合评分排序') + '。可直接预约试驾或进入详情下单。';
+            resultDiv.innerHTML = data.data.map(car => carCardHtml(car)).join('');
+        } else {
+            analysisDiv.innerHTML = '';
+            resultDiv.innerHTML = '<div class="col-12 text-center text-muted py-3">没找到匹配车型，请换条件或到车辆库筛选</div>';
+        }
+    }
+
+    function statusBadge(text) {
+        const map = { '待确认': 'warning', '已确认': 'success', '已完成': 'secondary', '已取消': 'dark',
+            '待支付': 'warning', '已支付': 'info', '已交付': 'success', '待处理': 'warning', '处理中': 'primary' };
+        const cls = map[text] || 'secondary';
+        return '<span class="badge bg-' + cls + '">' + (text || '-') + '</span>';
+    }
+
+    async function loadWorkbench() {
+        if (!currentUser) return;
+        const card = document.getElementById('workbenchCard');
+        card.style.display = '';
+        const [drives, orders, repairs] = await Promise.all([
+            apiRequest('/api/my_drives'),
+            apiRequest('/api/my_orders'),
+            apiRequest('/api/my_repairs')
+        ]);
+        const dList = (drives && drives.data) || [];
+        const oList = (orders && orders.data) || [];
+        const rList = (repairs && repairs.data) || [];
+        const pendingDrive = dList.filter(x => x.status === '待确认' || x.status === '已确认').length;
+        const pendingOrder = oList.filter(x => x.order_status === '待支付' || x.order_status === '已支付').length;
+        const pendingRepair = rList.filter(x => x.status === '待处理' || x.status === '处理中').length;
+        document.getElementById('workbenchStats').innerHTML =
+            '<div class="col-md-4"><div class="p-3 bg-light rounded"><div class="fw-bold">' + pendingDrive + '</div><div class="small text-muted">进行中的试驾</div><a href="/my_drives" class="small">去处理</a></div></div>'
+            + '<div class="col-md-4"><div class="p-3 bg-light rounded"><div class="fw-bold">' + pendingOrder + '</div><div class="small text-muted">待支付/待交付订单</div><a href="/my_orders" class="small">去处理</a></div></div>'
+            + '<div class="col-md-4"><div class="p-3 bg-light rounded"><div class="fw-bold">' + pendingRepair + '</div><div class="small text-muted">进行中的报修</div><a href="/my_repairs" class="small">去处理</a></div></div>';
+
+        const rows = [];
+        dList.slice(0, 3).forEach(x => rows.push(['试驾', (x.brand||'') + ' ' + (x.model||''), x.status, '/my_drives']));
+        oList.slice(0, 3).forEach(x => rows.push(['订单', (x.brand||'') + ' ' + (x.model||''), x.order_status, '/my_orders']));
+        rList.slice(0, 3).forEach(x => rows.push(['报修', (x.brand||'') + ' ' + (x.model||''), x.status, '/my_repairs']));
+        if (!rows.length) {
+            document.getElementById('workbenchList').innerHTML = '<p class="text-muted mb-0">暂无业务记录。可以从上方入口预约试驾、下单或报修。</p>';
+            return;
+        }
+        let html = '<table class="table table-sm align-middle mb-0"><thead><tr><th>类型</th><th>车型</th><th>状态</th><th></th></tr></thead><tbody>';
+        rows.forEach(r => {
+            html += '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + statusBadge(r[2]) + '</td><td><a href="' + r[3] + '">查看</a></td></tr>';
+        });
+        html += '</tbody></table>';
+        document.getElementById('workbenchList').innerHTML = html;
+    }
+
+    document.getElementById('nlInput').addEventListener('keypress', e => { if (e.key === 'Enter') nlRecommend(); });
+    document.getElementById('adminEntryLink').addEventListener('click', function(e) {
+        if (currentUser && currentUser.role === 'admin') return;
+        e.preventDefault();
+        if (!currentUser) {
+            showToast('请先使用管理员账号登录', 'warning');
+            setTimeout(() => { window.location.href = '/login'; }, 800);
+        } else {
+            showToast('当前账号无管理员权限', 'danger');
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadStats();
+        loadRecommend();
+        const waitAuth = setInterval(() => {
+            if (typeof currentUser !== 'undefined') {
+                clearInterval(waitAuth);
+                loadWorkbench();
+            }
+        }, 200);
+        setTimeout(() => clearInterval(waitAuth), 3000);
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}新能源汽车综合管理系统{% endblock %}</title>
+    <link href="/static/vendor/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/vendor/bootstrap-icons.css" rel="stylesheet">
+    <script src="/static/vendor/echarts.min.js"></script>
+    <style>
+        :root {
+            --primary: #1890ff;
+            --primary-dark: #096dd9;
+            --success: #52c41a;
+            --warning: #faad14;
+            --danger: #f5222d;
+            --bg-light: #f0f2f5;
+            --text-main: #333;
+            --text-secondary: #666;
+            --border-color: #e8e8e8;
+        }
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .navbar {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+        .nav-link {
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+        .nav-link:hover {
+            opacity: 0.85;
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+        .btn-outline-primary {
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+        .btn-outline-primary:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        .card {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            transition: box-shadow 0.3s, transform 0.2s;
+        }
+        .card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+        .main-content {
+            flex: 1;
+            padding: 24px 0;
+        }
+        .footer {
+            background: #fff;
+            border-top: 1px solid var(--border-color);
+            padding: 20px 0;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .stat-card {
+            text-align: center;
+            padding: 24px 16px;
+        }
+        .stat-card .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .stat-card .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+        .page-header {
+            margin-bottom: 24px;
+        }
+        .page-header h2 {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .page-header p {
+            color: var(--text-secondary);
+            margin: 0;
+        }
+        .badge-status {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+        }
+        .auth-hidden { display: none !important; }
+        a { text-decoration: none; }
+        .table th { font-weight: 600; background: #fafafa; }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-ev-front-fill me-2"></i>新能源汽车管理系统
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <!-- 普通用户：购车/试驾/报修入口（游客可见、管理员隐藏） -->
+                    <li class="nav-item role-user"><a class="nav-link" href="/"><i class="bi bi-house me-1"></i>首页</a></li>
+                    <li class="nav-item role-user"><a class="nav-link" href="/car_list"><i class="bi bi-car-front me-1"></i>选车购车</a></li>
+                    <li class="nav-item role-user"><a class="nav-link" href="/test_drive"><i class="bi bi-calendar-check me-1"></i>试驾预约</a></li>
+                    <li class="nav-item role-user"><a class="nav-link" href="/repair"><i class="bi bi-wrench me-1"></i>售后报修</a></li>
+                    <li class="nav-item auth-user auth-hidden dropdown role-user-login">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-workspace me-1"></i>我的业务
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/profile"><i class="bi bi-person-vcard me-2"></i>个人中心</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/my_drives"><i class="bi bi-calendar2-check me-2"></i>我的试驾</a></li>
+                            <li><a class="dropdown-item" href="/my_orders"><i class="bi bi-bag me-2"></i>我的订单</a></li>
+                            <li><a class="dropdown-item" href="/my_repairs"><i class="bi bi-tools me-2"></i>我的报修</a></li>
+                            <li><a class="dropdown-item" href="/favorites"><i class="bi bi-heart me-2"></i>我的收藏</a></li>
+                        </ul>
+                    </li>
+                    <!-- 管理员：专门管理菜单（仅管理员可见） -->
+                    <li class="nav-item auth-hidden role-admin"><a class="nav-link" href="/admin?t=dashboard"><i class="bi bi-speedometer2 me-1"></i>仪表盘</a></li>
+                    <li class="nav-item auth-hidden role-admin"><a class="nav-link" href="/admin?t=vehicles"><i class="bi bi-car-front me-1"></i>车辆管理</a></li>
+                    <li class="nav-item auth-hidden role-admin"><a class="nav-link" href="/admin?t=drives"><i class="bi bi-calendar-check me-1"></i>预约管理</a></li>
+                    <li class="nav-item auth-hidden role-admin"><a class="nav-link" href="/admin?t=orders"><i class="bi bi-bag me-1"></i>订单管理</a></li>
+                    <li class="nav-item auth-hidden role-admin"><a class="nav-link" href="/admin?t=repairs"><i class="bi bi-wrench me-1"></i>报修管理</a></li>
+                    <li class="nav-item auth-hidden role-admin"><a class="nav-link" href="/admin?t=reviews"><i class="bi bi-star me-1"></i>评价管理</a></li>
+                    <li class="nav-item auth-hidden role-admin"><a class="nav-link" href="/admin?t=import"><i class="bi bi-upload me-1"></i>数据导入</a></li>
+                    <li class="nav-item auth-hidden role-admin"><a class="nav-link" href="/stats"><i class="bi bi-bar-chart me-1"></i>经营看板</a></li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item auth-guest"><a class="nav-link" href="/login"><i class="bi bi-box-arrow-in-right me-1"></i>登录</a></li>
+                    <li class="nav-item auth-guest"><a class="nav-link" href="/register"><i class="bi bi-person-plus me-1"></i>注册</a></li>
+                    <li class="nav-item auth-user auth-hidden dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-1"></i><span id="nav-username">用户</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/profile"><i class="bi bi-person-vcard me-2"></i>个人中心</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item role-user-login" href="/my_drives"><i class="bi bi-calendar2-check me-2"></i>我的试驾</a></li>
+                            <li><a class="dropdown-item role-user-login" href="/my_orders"><i class="bi bi-bag me-2"></i>我的订单</a></li>
+                            <li><a class="dropdown-item role-user-login" href="/my_repairs"><i class="bi bi-tools me-2"></i>我的报修</a></li>
+                            <li><a class="dropdown-item role-user-login" href="/favorites"><i class="bi bi-heart me-2"></i>我的收藏</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="doLogout()"><i class="bi bi-box-arrow-right me-2"></i>退出登录</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容 -->
+    <div class="main-content">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <p class="mb-1">&copy; 2026 新能源汽车综合管理系统 · 选车 · 试驾 · 购车 · 售后</p>
+            <p class="mb-0 small text-muted">业务功能实现应用 · Flask + Bootstrap 5</p>
+        </div>
+    </footer>
+
+    <!-- Toast 容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/static/vendor/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局状态
+        let currentUser = null;
+
+        // 初始化用户状态
+        async function initAuth() {
+            try {
+                const res = await fetch('/api/me');
+                const data = await res.json();
+                if (data.code === 0 && data.data) {
+                    currentUser = data.data;
+                    updateNavbar(true, data.data);
+                } else {
+                    updateNavbar(false, null);
+                }
+            } catch (e) {
+                updateNavbar(false, null);
+            }
+        }
+
+        function updateNavbar(loggedIn, user) {
+            const guests = document.querySelectorAll('.auth-guest');
+            const users = document.querySelectorAll('.auth-user');
+            const roleUser = document.querySelectorAll('.role-user');
+            const roleUserLogin = document.querySelectorAll('.role-user-login');
+            const roleAdmin = document.querySelectorAll('.role-admin');
+            if (loggedIn && user) {
+                const isAdmin = user.role === 'admin';
+                guests.forEach(el => el.classList.add('auth-hidden'));
+                users.forEach(el => el.classList.remove('auth-hidden'));
+                document.getElementById('nav-username').textContent = user.username || '用户';
+                // 管理菜单仅管理员可见；普通业务导航管理员不可见
+                roleAdmin.forEach(el => el.classList.toggle('auth-hidden', !isAdmin));
+                roleUserLogin.forEach(el => el.classList.toggle('auth-hidden', isAdmin));
+                roleUser.forEach(el => el.classList.toggle('auth-hidden', isAdmin));
+            } else {
+                guests.forEach(el => el.classList.remove('auth-hidden'));
+                users.forEach(el => el.classList.add('auth-hidden'));
+                roleAdmin.forEach(el => el.classList.add('auth-hidden'));
+                roleUserLogin.forEach(el => el.classList.add('auth-hidden'));
+                roleUser.forEach(el => el.classList.remove('auth-hidden'));
+            }
+        }
+
+        // 退出登录
+        async function doLogout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+            } catch (e) {}
+            currentUser = null;
+            updateNavbar(false, null);
+            showToast('已退出登录', 'info');
+            if (window.location.pathname !== '/') {
+                window.location.href = '/';
+            }
+        }
+
+        // 检查登录状态
+        function requireLogin(message) {
+            if (!currentUser) {
+                showToast(message || '请先登录', 'warning');
+                setTimeout(() => { window.location.href = '/login'; }, 800);
+                return false;
+            }
+            return true;
+        }
+
+        // Toast 提示
+        function showToast(message, type) {
+            type = type || 'info';
+            const icons = { success: 'bi-check-circle-fill', danger: 'bi-x-circle-fill', warning: 'bi-exclamation-triangle-fill', info: 'bi-info-circle-fill' };
+            const container = document.getElementById('toastContainer');
+            const toastEl = document.createElement('div');
+            toastEl.className = 'toast align-items-center text-bg-' + type + ' border-0 mb-2';
+            toastEl.setAttribute('role', 'alert');
+            toastEl.innerHTML = '<div class="d-flex"><div class="toast-body"><i class="bi ' + (icons[type]||icons.info) + ' me-2"></i>' + message + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
+            container.appendChild(toastEl);
+            const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+            toast.show();
+            toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+        }
+
+        // 通用 API 请求
+        async function apiRequest(url, options) {
+            options = options || {};
+            try {
+                const res = await fetch(url, options);
+                const data = await res.json();
+                if (data.code === 401) {
+                    showToast('请先登录', 'warning');
+                    setTimeout(() => { window.location.href = '/login'; }, 800);
+                    return null;
+                }
+                if (data.code === 403) {
+                    showToast('无权限操作', 'danger');
+                    return null;
+                }
+                return data;
+            } catch (e) {
+                showToast('网络请求失败', 'danger');
+                return null;
+            }
+        }
+
+        // 格式化价格
+        function formatPrice(price) {
+            if (!price) return '暂无报价';
+            const num = parseFloat(price);
+            if (num >= 10000) {
+                return (num / 10000).toFixed(2) + '万';
+            }
+            return num.toFixed(2) + '元';
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            await initAuth();
+            document.dispatchEvent(new Event('auth-ready'));
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

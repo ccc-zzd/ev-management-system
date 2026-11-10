@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}个人中心 - 新能源汽车综合管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-person-vcard me-2"></i>个人中心</h2>
+    <p>管理您的账户资料与业务记录</p>
+</div>
+
+<div class="row g-4">
+    <!-- 左侧：业务统计 -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-white"><b><i class="bi bi-grid-1x2 me-2"></i>我的业务概览</b></div>
+            <div class="card-body">
+                <div class="row g-3" id="statCards">
+                    <div class="col-6 col-md-3">
+                        <a href="/favorites" class="text-decoration-none d-block">
+                            <div class="stat-card card h-100">
+                                <div class="stat-number" id="cntFav">—</div>
+                                <div class="stat-label"><i class="bi bi-heart me-1 text-danger"></i>收藏</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <a href="/my_drives" class="text-decoration-none d-block">
+                            <div class="stat-card card h-100">
+                                <div class="stat-number" id="cntDrive">—</div>
+                                <div class="stat-label"><i class="bi bi-calendar2-check me-1 text-success"></i>试驾</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <a href="/my_orders" class="text-decoration-none d-block">
+                            <div class="stat-card card h-100">
+                                <div class="stat-number" id="cntOrder">—</div>
+                                <div class="stat-label"><i class="bi bi-bag me-1 text-primary"></i>订单</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <a href="/my_repairs" class="text-decoration-none d-block">
+                            <div class="stat-card card h-100">
+                                <div class="stat-number" id="cntRepair">—</div>
+                                <div class="stat-label"><i class="bi bi-tools me-1 text-warning"></i>报修</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <a href="/favorites" class="btn btn-outline-primary btn-sm"><i class="bi bi-heart me-1"></i>收藏夹</a>
+                    <a href="/my_drives" class="btn btn-outline-primary btn-sm"><i class="bi bi-calendar2-check me-1"></i>我的试驾</a>
+                    <a href="/my_orders" class="btn btn-outline-primary btn-sm"><i class="bi bi-bag me-1"></i>我的订单</a>
+                    <a href="/my_repairs" class="btn btn-outline-primary btn-sm"><i class="bi bi-tools me-1"></i>我的报修</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧：账户信息 -->
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header bg-white"><b><i class="bi bi-person-circle me-2"></i>账户信息</b></div>
+            <div class="card-body">
+                <table class="table mb-0">
+                    <tbody>
+                        <tr><th style="width:120px">用户名</th><td id="pvUsername">—</td></tr>
+                        <tr><th>角色</th><td id="pvRole">—</td></tr>
+                        <tr><th>手机号</th><td id="pvPhone">—</td></tr>
+                        <tr><th>注册时间</th><td id="pvCreated">—</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 修改资料 -->
+        <div class="card mb-4">
+            <div class="card-header bg-white"><b><i class="bi bi-pencil-square me-2"></i>修改资料</b></div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">手机号</label>
+                    <input type="text" class="form-control" id="editPhone" placeholder="请输入 11 位手机号">
+                </div>
+                <button class="btn btn-primary" id="btnSaveProfile"><i class="bi bi-check2 me-1"></i>保存资料</button>
+            </div>
+        </div>
+
+        <!-- 修改密码 -->
+        <div class="card">
+            <div class="card-header bg-white"><b><i class="bi bi-shield-lock me-2"></i>修改密码</b></div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">原密码</label>
+                    <input type="password" class="form-control" id="pwdOld" placeholder="请输入原密码">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">新密码</label>
+                    <input type="password" class="form-control" id="pwdNew" placeholder="至少 6 位">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">确认新密码</label>
+                    <input type="password" class="form-control" id="pwdConfirm" placeholder="再次输入新密码">
+                </div>
+                <button class="btn btn-primary" id="btnChangePwd"><i class="bi bi-key me-1"></i>修改密码</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let profileUser = null;
+
+    async function loadProfile() {
+        const data = await apiRequest('/api/profile');
+        if (!data || data.code !== 0) {
+            document.querySelectorAll('.stat-number').forEach(el => el.textContent = '0');
+            return;
+        }
+        const u = data.data.user || {};
+        const c = data.data.counts || {};
+        profileUser = u;
+        document.getElementById('pvUsername').textContent = u.username || '—';
+        document.getElementById('pvRole').textContent = (u.role === 'admin' ? '管理员' : '普通用户');
+        document.getElementById('pvPhone').textContent = u.phone || '未填写';
+        document.getElementById('pvCreated').textContent = u.created_at ? String(u.created_at).replace('T', ' ') : '—';
+        document.getElementById('editPhone').value = u.phone || '';
+        document.getElementById('cntFav').textContent = c.favorite || 0;
+        document.getElementById('cntDrive').textContent = c.test_drive || 0;
+        document.getElementById('cntOrder').textContent = c.order || 0;
+        document.getElementById('cntRepair').textContent = c.repair || 0;
+    }
+
+    async function saveProfile() {
+        if (!requireLogin('请先登录')) return;
+        const phone = document.getElementById('editPhone').value.trim();
+        if (phone && !(/^\d{11}$/.test(phone))) {
+            showToast('手机号应为 11 位数字', 'warning');
+            return;
+        }
+        const data = await apiRequest('/api/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: phone })
+        });
+        if (data && data.code === 0) {
+            showToast(data.msg || '资料已更新', 'success');
+            loadProfile();
+        } else if (data) {
+            showToast(data.msg || '保存失败', 'danger');
+        }
+    }
+
+    async function changePassword() {
+        if (!requireLogin('请先登录')) return;
+        const oldPwd = document.getElementById('pwdOld').value;
+        const newPwd = document.getElementById('pwdNew').value;
+        const confirmPwd = document.getElementById('pwdConfirm').value;
+        if (!oldPwd || !newPwd) { showToast('请填写原密码和新密码', 'warning'); return; }
+        if (newPwd.length < 6) { showToast('新密码至少 6 位', 'warning'); return; }
+        if (newPwd !== confirmPwd) { showToast('两次输入的新密码不一致', 'warning'); return; }
+        const data = await apiRequest('/api/profile/password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ old_password: oldPwd, new_password: newPwd })
+        });
+        if (data && data.code === 0) {
+            showToast(data.msg || '密码修改成功', 'success');
+            document.getElementById('pwdOld').value = '';
+            document.getElementById('pwdNew').value = '';
+            document.getElementById('pwdConfirm').value = '';
+        } else if (data) {
+            showToast(data.msg || '修改失败', 'danger');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadProfile();
+        document.getElementById('btnSaveProfile').addEventListener('click', saveProfile);
+        document.getElementById('btnChangePwd').addEventListener('click', changePassword);
+    });
+</script>
+{% endblock %}

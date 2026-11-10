@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}预约试驾 - 新能源汽车综合管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-calendar-check me-2"></i>预约试驾</h2>
+    <p>选择心仪车型，预约线下试驾体验</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div id="driveAlert"></div>
+                <form id="driveForm" onsubmit="doBooking(event)">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-car-front me-1"></i>选择车型 <span class="text-danger">*</span></label>
+                        <select class="form-select" id="vehicleId" required>
+                            <option value="">请选择车型...</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-calendar me-1"></i>试驾日期 <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="driveDate" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-clock me-1"></i>试驾时间 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="driveTime" required>
+                                <option value="">请选择时段...</option>
+                                <option>上午</option>
+                                <option>下午</option>
+                                <option>晚上</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-phone me-1"></i>联系电话 <span class="text-muted small">(必填)</span></label>
+                        <input type="tel" class="form-control" id="contactPhone" placeholder="请输入联系电话" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-chat-left-text me-1"></i>备注</label>
+                        <textarea class="form-control" id="remark" rows="2" placeholder="其他需求（可选）"></textarea>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                            <i class="bi bi-check-circle me-1"></i>提交预约
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const presetVehicleId = urlParams.get('vehicle_id') || '';
+
+    async function loadVehicles() {
+        const data = await apiRequest('/api/vehicles?limit=2000');
+        const sel = document.getElementById('vehicleId');
+        if (!data || data.code !== 0) {
+            sel.innerHTML = '<option value="">车型加载失败</option>';
+            return;
+        }
+        let options = '<option value="">请选择车型...</option>';
+        (data.data || []).forEach(v => {
+            const name = v.brand + ' ' + (v.series || '') + ' ' + v.model;
+            const selected = presetVehicleId && presetVehicleId === v.vehicle_id ? ' selected' : '';
+            options += '<option value="' + v.vehicle_id + '"' + selected + '>' + name + '</option>';
+        });
+        sel.innerHTML = options;
+    }
+
+    async function doBooking(e) {
+        e.preventDefault();
+        const vehicle_id = document.getElementById('vehicleId').value;
+        const drive_date = document.getElementById('driveDate').value;
+        const drive_time = document.getElementById('driveTime').value;
+        const contact_phone = document.getElementById('contactPhone').value.trim();
+        const remark = document.getElementById('remark').value.trim();
+
+        if (!requireLogin('请先登录后再预约试驾')) return;
+        if (!vehicle_id || !drive_date || !drive_time) {
+            document.getElementById('driveAlert').innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-1"></i>请填写完整的预约信息</div>';
+            return;
+        }
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat spin me-1"></i>提交中...';
+        const res = await fetch('/api/test_drive', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vehicle_id, drive_date, drive_time, contact_phone, remark })
+        });
+        const data = await res.json();
+        if (data.code === 0) {
+            showToast('预约成功！', 'success');
+            setTimeout(() => { window.location.href = '/my_drives'; }, 800);
+        } else {
+            document.getElementById('driveAlert').innerHTML = '<div class="alert alert-danger"><i class="bi bi-x-circle me-1"></i>' + (data.msg || '预约失败') + '</div>';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>提交预约';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadVehicles();
+        const today = new Date();
+        today.setDate(today.getDate() + 1);
+        document.getElementById('driveDate').min = today.toISOString().split('T')[0];
+    });
+</script>
+{% endblock %}

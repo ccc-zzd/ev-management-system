@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}登录 - 新能源汽车综合管理系统{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow-sm mt-4">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="bi bi-ev-front-fill text-primary" style="font-size: 2.5rem;"></i>
+                    <h4 class="fw-bold mt-2">用户登录</h4>
+                    <p class="text-muted small">欢迎回来，请登录您的账号</p>
+                </div>
+                <div id="loginAlert"></div>
+                <form id="loginForm" onsubmit="doLogin(event)">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-person me-1"></i>用户名</label>
+                        <input type="text" class="form-control" id="username" placeholder="请输入用户名" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold"><i class="bi bi-lock me-1"></i>密码</label>
+                        <input type="password" class="form-control" id="password" placeholder="请输入密码" required>
+                    </div>
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary btn-lg" id="loginBtn">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>登 录
+                        </button>
+                    </div>
+                    <div class="text-center">
+                        <span class="text-muted">还没有账号？</span>
+                        <a href="/register">立即注册</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function doLogin(e) {
+        e.preventDefault();
+        const btn = document.getElementById('loginBtn');
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        if (!username || !password) {
+            document.getElementById('loginAlert').innerHTML = '<div class="alert alert-warning alert-dismissible"><i class="bi bi-exclamation-triangle me-1"></i>请填写用户名和密码<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+            return;
+        }
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat spin me-1"></i>登录中...';
+        try {
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (data.code === 0) {
+                showToast('登录成功！', 'success');
+                const next = new URLSearchParams(window.location.search).get('next') || '/';
+                const go = next.startsWith('/') && !next.startsWith('//') ? next : '/';
+                setTimeout(() => { window.location.href = go; }, 500);
+            } else {
+                document.getElementById('loginAlert').innerHTML = '<div class="alert alert-danger alert-dismissible"><i class="bi bi-x-circle me-1"></i>' + (data.msg || '登录失败') + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i>登 录';
+            }
+        } catch (err) {
+            document.getElementById('loginAlert').innerHTML = '<div class="alert alert-danger alert-dismissible"><i class="bi bi-x-circle me-1"></i>网络错误，请重试<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-1"></i>登 录';
+        }
+    }
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+</style>
+{% endblock %}

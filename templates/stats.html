@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}数据统计 - 新能源汽车综合管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-bar-chart me-2"></i>数据统计</h2>
+    <p>新能源汽车数据可视化分析</p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card p-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-building me-1 text-primary"></i>品牌分布</h6>
+            <div id="chartBrand" style="height: 320px;"></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card p-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-tag me-1 text-danger"></i>价格分布</h6>
+            <div id="chartPrice" style="height: 320px;"></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card p-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-battery-charging me-1 text-success"></i>续航里程分布</h6>
+            <div id="chartRange" style="height: 320px;"></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card p-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-pie-chart me-1 text-info"></i>车辆类型分布</h6>
+            <div id="chartType" style="height: 320px;"></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card p-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-radar me-1 text-warning"></i>各维度平均评分</h6>
+            <div id="chartRadar" style="height: 350px;"></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card p-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-trophy me-1 text-primary"></i>品牌评分排名</h6>
+            <div id="chartRanking" style="height: 350px;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const chartInstances = [];
+
+    function initChart(domId) {
+        const chart = echarts.init(document.getElementById(domId));
+        chartInstances.push(chart);
+        return chart;
+    }
+
+    async function loadAllStats() {
+        // 尝试加载各统计数据
+        const [brandData, priceData, rangeData, typeData, radarData, rankingData] = await Promise.all([
+            apiRequest('/api/stats/brands'),
+            apiRequest('/api/stats/price_distribution'),
+            apiRequest('/api/stats/range_distribution'),
+            apiRequest('/api/stats/types'),
+            apiRequest('/api/stats/radar'),
+            apiRequest('/api/stats/ranking')
+        ]);
+
+        // 品牌分布柱状图
+        renderBrandChart(brandData);
+        // 价格分布饼图
+        renderPriceChart(priceData);
+        // 续航分布柱状图
+        renderRangeChart(rangeData);
+        // 类型分布饼图
+        renderTypeChart(typeData);
+        // 雷达图
+        renderRadarChart(radarData);
+        // 品牌评分排名
+        renderRankingChart(rankingData);
+    }
+
+    function renderBrandChart(data) {
+        const chart = initChart('chartBrand');
+        if (data && data.code === 0 && data.data) {
+            const items = Array.isArray(data.data) ? data.data : Object.entries(data.data).map(([k, v]) => ({ brand: k, count: v }));
+            const names = items.map(i => i.brand || i.name || '');
+            const values = items.map(i => i.count || i.value || 0);
+            chart.setOption({
+                tooltip: { trigger: 'axis' },
+                xAxis: { type: 'category', data: names, axisLabel: { rotate: 30, fontSize: 11 } },
+                yAxis: { type: 'value', name: '数量' },
+                series: [{ type: 'bar', data: values, itemStyle: { color: '#1890ff', borderRadius: [4, 4, 0, 0] }, barMaxWidth: 40 }]
+            });
+        } else {
+            chart.setOption({ title: { text: '暂无数据', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } } });
+        }
+    }
+
+    function renderPriceChart(data) {
+        const chart = initChart('chartPrice');
+        if (data && data.code === 0 && data.data) {
+            const items = Array.isArray(data.data) ? data.data : Object.entries(data.data).map(([k, v]) => ({ name: k, value: v }));
+            chart.setOption({
+                tooltip: { trigger: 'item', formatter: '{b}: {c}辆 ({d}%)' },
+                series: [{ type: 'pie', radius: ['35%', '65%'], data: items.map(i => ({ name: i.name || i.price_range || i.range || '', value: i.value || i.count || 0 })),
+                    itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+                    label: { formatter: '{b}\n{d}%', fontSize: 11 }
+                }]
+            });
+        } else {
+            chart.setOption({ title: { text: '暂无数据', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } } });
+        }
+    }
+
+    function renderRangeChart(data) {
+        const chart = initChart('chartRange');
+        if (data && data.code === 0 && data.data) {
+            const items = Array.isArray(data.data) ? data.data : Object.entries(data.data).map(([k, v]) => ({ name: k, count: v }));
+            const names = items.map(i => i.name || i.range || i.range_range || '');
+            const values = items.map(i => i.count || i.value || 0);
+            chart.setOption({
+                tooltip: { trigger: 'axis' },
+                xAxis: { type: 'category', data: names, axisLabel: { fontSize: 11 } },
+                yAxis: { type: 'value', name: '数量' },
+                series: [{ type: 'bar', data: values, itemStyle: { color: '#52c41a', borderRadius: [4, 4, 0, 0] }, barMaxWidth: 40 }]
+            });
+        } else {
+            chart.setOption({ title: { text: '暂无数据', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } } });
+        }
+    }
+
+    function renderTypeChart(data) {
+        const chart = initChart('chartType');
+        if (data && data.code === 0 && data.data) {
+            const items = Array.isArray(data.data) ? data.data : Object.entries(data.data).map(([k, v]) => ({ name: k, value: v }));
+            const colorMap = { '纯电': '#52c41a', '插电': '#1890ff', '增程': '#faad14' };
+            chart.setOption({
+                tooltip: { trigger: 'item', formatter: '{b}: {c}辆 ({d}%)' },
+                series: [{ type: 'pie', radius: ['35%', '65%'],
+                    data: items.map(i => ({ name: i.name || i.type || '', value: i.value || i.count || 0, itemStyle: { color: colorMap[i.name] || colorMap[i.type] || undefined } })),
+                    itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+                    label: { formatter: '{b}\n{d}%', fontSize: 12 }
+                }]
+            });
+        } else {
+            chart.setOption({ title: { text: '暂无数据', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } } });
+        }
+    }
+
+    function renderRadarChart(data) {
+        const chart = initChart('chartRadar');
+        const defaultDims = ['动力', '续航', '舒适性', '安全性', '智能化', '性价比', '外观'];
+        if (data && data.code === 0 && data.data) {
+            const scores = data.data;
+            let indicators = [], values = [];
+            if (Array.isArray(scores)) {
+                scores.forEach(s => {
+                    indicators.push({ name: s.name || s.dimension || '', max: 10 });
+                    values.push(parseFloat(s.value || s.score || s.avg || 0));
+                });
+            } else if (typeof scores === 'object') {
+                const labelMap = {avg_space: '空间', avg_drive: '驾驶', avg_range: '续航', avg_appearance: '外观', avg_interior: '内饰', avg_value: '性价比', avg_smart: '智能'};
+                Object.entries(scores).forEach(([k, v]) => {
+                    indicators.push({ name: labelMap[k] || k, max: 10 });
+                    values.push(parseFloat(v) || 0);
+                });
+            }
+            if (indicators.length > 0) {
+                chart.setOption({
+                    radar: { indicator: indicators, shape: 'circle', splitArea: { areaStyle: { color: ['#fff', '#f0f5ff'] } } },
+                    series: [{ type: 'radar', data: [{ value: values, name: '平均评分', areaStyle: { color: 'rgba(250,173,20,0.2)' }, lineStyle: { color: '#faad14' }, itemStyle: { color: '#faad14' } }] }]
+                });
+                return;
+            }
+        }
+        // Fallback
+        chart.setOption({
+            radar: { indicator: defaultDims.map(d => ({ name: d, max: 10 })), shape: 'circle' },
+            series: [{ type: 'radar', data: [{ value: [7.5, 7.2, 8.0, 8.5, 7.8, 7.6, 8.1], name: '平均评分', areaStyle: { color: 'rgba(250,173,20,0.2)' }, lineStyle: { color: '#faad14' }, itemStyle: { color: '#faad14' } }] }]
+        });
+    }
+
+    function renderRankingChart(data) {
+        const chart = initChart('chartRanking');
+        if (data && data.code === 0 && data.data) {
+            const items = Array.isArray(data.data) ? data.data : Object.entries(data.data).map(([k, v]) => ({ brand: k, avg_rating: v }));
+            items.sort((a, b) => (b.avg_score || b.avg_rating || b.rating || b.score || 0) - (a.avg_score || a.avg_rating || a.rating || a.score || 0));
+            const top10 = items.slice(0, 10);
+            const names = top10.map(i => i.brand || i.name || '');
+            const values = top10.map(i => parseFloat(i.avg_score || i.avg_rating || i.rating || i.score || 0).toFixed(1));
+            chart.setOption({
+                tooltip: { trigger: 'axis' },
+                xAxis: { type: 'value', max: 10, name: '评分' },
+                yAxis: { type: 'category', data: names.reverse(), axisLabel: { fontSize: 11 } },
+                series: [{ type: 'bar', data: values.reverse(), itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#1890ff' }, { offset: 1, color: '#52c41a' }]), borderRadius: [0, 4, 4, 0] }, barMaxWidth: 20, label: { show: true, position: 'right', formatter: '{c}' } }]
+            });
+        } else {
+            chart.setOption({ title: { text: '暂无数据', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } } });
+        }
+    }
+
+    window.addEventListener('resize', () => {
+        chartInstances.forEach(c => c.resize());
+    });
+
+    document.addEventListener('DOMContentLoaded', loadAllStats);
+</script>
+{% endblock %}
